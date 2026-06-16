@@ -1,0 +1,21 @@
+name: Update Dependency Wheels
+
+on:
+  push:
+    paths:
+      - 'blender_manifest.toml'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+jobs:
+  update_wheels:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Wheels
+        uses: bookflyers/blender-addon-update-wheels@v1
