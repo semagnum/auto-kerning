@@ -1,0 +1,35 @@
+name: Create Draft Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create_draft_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read blender_manifest.toml
+        shell: bash
+        run: |
+          sudo snap install yq
+          echo "OUTPUT_FILENAME=$(yq -r '.id' blender_manifest.toml)-$(yq -r '.version' blender_manifest.toml).zip" >> $GITHUB_ENV
+          echo "RELEASE_NAME=$(yq -r '.name' blender_manifest.toml) v$(yq -r '.version' blender_manifest.toml)" >> $GITHUB_ENV
+          echo "TAG_NAME=v$(yq -r '.version' blender_manifest.toml)" >> $GITHUB_ENV
+
+      - name: Create release archive
+        run: |
+          mapfile -t EXCLUDES < <(yq -r '.build.paths_exclude_pattern[]' blender_manifest.toml| sed 's|/$|/*|')
+          zip -r ${{ env.OUTPUT_FILENAME }} ./ -x "${EXCLUDES[@]}"
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.TAG_NAME }}
+          files: ${{ env.OUTPUT_FILENAME }}
